@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trivia · Marco Curricular EMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2330;
+    --border: #30363d;
+    --accent: #e8a838;
+    --accent2: #3fb68a;
+    --accent3: #e85c38;
+    --text: #e6edf3;
+    --muted: #8b949e;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background-image: radial-gradient(ellipse at 20% 50%, rgba(232,168,56,0.06) 0%, transparent 60%),
+                      radial-gradient(ellipse at 80% 20%, rgba(63,182,138,0.05) 0%, transparent 50%);
+  }
+  #app { width: 100%; max-width: 760px; }
+  #screen-start { text-align: center; animation: fadeIn 0.6s ease; }
+  .badge {
+    display: inline-block;
+    background: rgba(232,168,56,0.15);
+    border: 1px solid rgba(232,168,56,0.35);
+    color: var(--accent);
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 2px; text-transform: uppercase;
+    padding: 6px 16px; border-radius: 100px; margin-bottom: 28px;
+  }
+  h1 { font-family: 'Fraunces', serif; font-size: clamp(2.2rem, 5vw, 3.2rem); font-weight: 900; line-height: 1.1; margin-bottom: 16px; }
+  h1 span { color: var(--accent); }
+  .subtitle { font-size: 1rem; color: var(--muted); max-width: 480px; margin: 0 auto 40px; line-height: 1.7; }
+  .btn-primary {
+    background: var(--accent); color: #0d1117; border: none;
+    font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 600;
+    padding: 14px 36px; border-radius: 10px; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-primary:hover { background: #f5b940; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(232,168,56,0.3); }
+  .stats-preview { display: flex; justify-content: center; gap: 36px; margin-top: 48px; flex-wrap: wrap; }
+  .stat-num { font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 900; color: var(--accent); display: block; }
+  .stat-label { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  #screen-quiz { display: none; }
+  .quiz-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .progress-text { font-size: 0.82rem; color: var(--muted); font-weight: 500; }
+  .score-display { font-size: 0.82rem; color: var(--accent); font-weight: 600; }
+  .progress-bar-bg { background: var(--border); border-radius: 100px; height: 4px; margin-bottom: 32px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 100px; transition: width 0.4s ease; }
+  .question-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; margin-bottom: 20px; }
+  .question-category { font-size: 0.72rem; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent2); margin-bottom: 14px; }
+  .question-text { font-family: 'Fraunces', serif; font-size: clamp(1.1rem, 2.5vw, 1.3rem); font-weight: 700; line-height: 1.55; }
+  .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  @media(max-width: 560px) { .options-grid { grid-template-columns: 1fr; } }
+  .option-btn {
+    background: var(--surface2); border: 1.5px solid var(--border);
+    color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem; font-weight: 400;
+    padding: 16px 18px; border-radius: 12px; cursor: pointer;
+    text-align: left; transition: all 0.18s; line-height: 1.45;
+  }
+  .option-btn:hover:not(:disabled) { border-color: var(--accent); background: rgba(232,168,56,0.08); transform: translateY(-1px); }
+  .option-btn:disabled { cursor: default; }
+  .option-btn.correct { border-color: var(--accent2); background: rgba(63,182,138,0.15); color: #4ade9a; }
+  .option-btn.wrong { border-color: var(--accent3); background: rgba(232,92,56,0.15); color: #f87171; }
+  .option-letter { display: inline-block; width: 22px; height: 22px; border-radius: 6px; background: rgba(255,255,255,0.07); font-size: 0.7rem; font-weight: 700; text-align: center; line-height: 22px; margin-right: 10px; }
+  .feedback-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; display: none; animation: slideUp 0.3s ease; }
+  .feedback-box.show { display: block; }
+  .feedback-box.correct-fb { border-color: rgba(63,182,138,0.4); background: rgba(63,182,138,0.07); }
+  .feedback-box.wrong-fb { border-color: rgba(232,92,56,0.4); background: rgba(232,92,56,0.07); }
+  .feedback-title { font-weight: 700; margin-bottom: 6px; font-size: 0.95rem; }
+  .correct-fb .feedback-title { color: var(--accent2); }
+  .wrong-fb .feedback-title { color: var(--accent3); }
+  .feedback-text { font-size: 0.88rem; color: var(--muted); line-height: 1.65; }
+  #btn-next { width: 100%; padding: 15px; background: transparent; border: 1.5px solid var(--accent); color: var(--accent); font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 600; border-radius: 12px; cursor: pointer; transition: all 0.2s; display: none; }
+  #btn-next:hover { background: var(--accent); color: #0d1117; }
+  #btn-next.show { display: block; animation: fadeIn 0.3s ease; }
+  #screen-result { display: none; text-align: center; }
+  .result-icon { font-size: 3.5rem; margin-bottom: 16px; display: block; }
+  .result-score-big { font-family: 'Fraunces', serif; font-size: clamp(3rem, 8vw, 5rem); font-weight: 900; color: var(--accent); line-height: 1; margin-bottom: 8px; }
+  .result-label { font-size: 0.95rem; color: var(--muted); margin-bottom: 36px; line-height: 1.6; }
+  .result-breakdown { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 28px; text-align: left; }
+  .breakdown-title { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 700; margin-bottom: 20px; }
+  .breakdown-item { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; font-size: 0.87rem; }
+  .breakdown-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-correct { background: var(--accent2); }
+  .dot-wrong { background: var(--accent3); }
+  .breakdown-q { flex: 1; color: var(--muted); }
+  .breakdown-mark { font-weight: 700; }
+  .mark-c { color: var(--accent2); }
+  .mark-w { color: var(--accent3); }
+  .btn-restart { background: var(--accent); color: #0d1117; border: none; font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 600; padding: 14px 32px; border-radius: 10px; cursor: pointer; transition: all 0.2s; margin-right: 10px; }
+  .btn-restart:hover { background: #f5b940; }
+  .btn-secondary { background: transparent; color: var(--muted); border: 1.5px solid var(--border); font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; padding: 14px 24px; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+  .btn-secondary:hover { border-color: var(--muted); color: var(--text); }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)} }
+  @keyframes slideUp { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)} }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="screen-start">
+    <div class="badge">Retroalimentación Docente</div>
+    <h1>Marco Curricular <span>EMS</span></h1>
+    <p class="subtitle">Trivia general sobre el Marco Curricular de la Educación Media Superior. Pon a prueba lo que sabes de forma rápida y sencilla.</p>
+    <button class="btn-primary" onclick="startQuiz()">Comenzar trivia →</button>
+    <div class="stats-preview">
+      <div><span class="stat-num">14</span><span class="stat-label">Preguntas</span></div>
+      <div><span class="stat-num">4</span><span class="stat-label">Temas</span></div>
+      <div><span class="stat-num">~8</span><span class="stat-label">Minutos</span></div>
+    </div>
+  </div>
+
+  <div id="screen-quiz">
+    <div class="quiz-header">
+      <span class="progress-text" id="progress-text">Pregunta 1 de 15</span>
+      <span class="score-display" id="score-text">Aciertos: 0</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progress-bar" style="width:0%"></div>
+    </div>
+    <div class="question-card">
+      <div class="question-category" id="q-category"></div>
+      <div class="question-text" id="q-text"></div>
+    </div>
+    <div class="options-grid" id="options-grid"></div>
+    <div class="feedback-box" id="feedback-box">
+      <div class="feedback-title" id="feedback-title"></div>
+      <div class="feedback-text" id="feedback-text"></div>
+    </div>
+    <button id="btn-next" onclick="nextQuestion()">Siguiente →</button>
+  </div>
+
+  <div id="screen-result">
+    <span class="result-icon" id="result-icon"></span>
+    <div class="result-score-big" id="result-score"></div>
+    <div class="result-label" id="result-label"></div>
+    <div class="result-breakdown">
+      <div class="breakdown-title">Revisión de respuestas</div>
+      <div id="breakdown-list"></div>
+    </div>
+    <button class="btn-restart" onclick="startQuiz()">Intentar de nuevo</button>
+    <button class="btn-secondary" onclick="showStart()">Inicio</button>
+  </div>
+
+</div>
+
+<script>
+const questions = [
+  {
+    // Correcta: A (0)
+    category: "¿Qué es el Marco Curricular?",
+    text: "¿Para qué sirve el Marco Curricular de la EMS?",
+    options: [
+      "Para que todos los estudiantes logren aprendizajes comunes sin importar la escuela donde estudien",
+      "Para que todas las escuelas tengan los mismos libros de texto",
+      "Para controlar el horario de clases de cada plantel",
+      "Para que solo las escuelas públicas sigan el mismo programa"
+    ],
+    answer: 0,
+    explanation: "El Marco Curricular establece un piso común de aprendizajes que todos los jóvenes deben alcanzar al terminar el bachillerato, sin importar si van a un CBTIS, Conalep, preparatoria u otro subsistema."
+  },
+  {
+    // Correcta: B (1)
+    category: "Enfoque educativo",
+    text: "¿En qué se centra el enfoque educativo del Marco Curricular EMS?",
+    options: [
+      "En la memorización de contenidos por parte del estudiante",
+      "En el desarrollo integral del estudiante para que pueda aplicar lo que aprende en su vida",
+      "En preparar a los jóvenes exclusivamente para la universidad",
+      "En estandarizar los exámenes de todas las materias"
+    ],
+    answer: 1,
+    explanation: "El Marco Curricular tiene un enfoque integral: busca que el estudiante no solo acumule conocimientos, sino que los aplique en su vida personal, social y laboral."
+  },
+  {
+    // Correcta: C (2)
+    category: "El docente en el Marco Curricular",
+    text: "¿Qué se espera del docente dentro del Marco Curricular EMS?",
+    options: [
+      "Que siga el libro de texto al pie de la letra",
+      "Que aplique exámenes estandarizados cada mes",
+      "Que sea un guía que acompaña a los estudiantes en su aprendizaje",
+      "Que dicte la clase y los alumnos tomen nota"
+    ],
+    answer: 2,
+    explanation: "El Marco Curricular propone que el docente sea un acompañante y guía del aprendizaje, no solo un transmisor de información. El centro es el estudiante y su desarrollo."
+  },
+  {
+    // Correcta: D (3)
+    category: "Perfil del estudiante",
+    text: "¿Cómo debe ser el egresado de la EMS según el Marco Curricular?",
+    options: [
+      "Especialista en una sola área del conocimiento",
+      "Capaz de memorizar grandes cantidades de información",
+      "Dependiente del docente para resolver cualquier problema",
+      "Una persona que sabe pensar, aprender sola y convivir en sociedad"
+    ],
+    answer: 3,
+    explanation: "El Marco Curricular busca formar jóvenes integrales: que piensen de forma crítica, que puedan aprender por sí mismos y que participen de manera responsable en su comunidad."
+  },
+  {
+    // Correcta: A (0)
+    category: "¿Qué es el Marco Curricular?",
+    text: "¿El Marco Curricular obliga a todas las escuelas a tener el mismo plan de estudios?",
+    options: [
+      "No, cada escuela puede tener su propio enfoque mientras garantice los aprendizajes comunes",
+      "Sí, todas las escuelas públicas y privadas deben tener el mismo plan",
+      "Solo aplica a las escuelas federales, no a las estatales",
+      "Depende del acuerdo que tenga cada plantel con la SEP"
+    ],
+    answer: 0,
+    explanation: "El Marco Curricular respeta la identidad y diversidad de cada subsistema. Lo que exige es garantizar los aprendizajes comunes, pero cada escuela conserva su propio plan y enfoque."
+  },
+  {
+    // Correcta: C (2)
+    category: "El docente en el Marco Curricular",
+    text: "¿Por qué es importante que el docente conozca bien a sus estudiantes?",
+    options: [
+      "Para saber si han reprobado materias anteriormente",
+      "Para decidir qué tan difícil será el examen",
+      "Para diseñar clases que sean relevantes y significativas para su grupo",
+      "Para reportar a los padres de familia sobre el comportamiento"
+    ],
+    answer: 2,
+    explanation: "Conocer a los estudiantes permite al docente diseñar situaciones de aprendizaje pertinentes y conectadas con la realidad del grupo. Enseñar parte del contexto del alumno."
+  },
+  {
+    // Correcta: D (3)
+    category: "Enfoque educativo",
+    text: "¿Qué significa que la evaluación tenga un enfoque formativo?",
+    options: [
+      "Que solo se evalúa al final del semestre con un examen",
+      "Que el docente pone la calificación según su criterio personal",
+      "Que se evalúa únicamente la participación oral del alumno",
+      "Que la evaluación sirve para mejorar el aprendizaje, no solo para poner una nota"
+    ],
+    answer: 3,
+    explanation: "La evaluación formativa acompaña todo el proceso de aprendizaje. Su propósito es identificar qué está aprendiendo el estudiante y qué necesita mejorar, no solo asignar una calificación al final."
+  },
+  {
+    // Correcta: A (0)
+    category: "Perfil del estudiante",
+    text: "¿Qué actitud se espera del estudiante de EMS respecto a su propio aprendizaje?",
+    options: [
+      "Que sea capaz de aprender por sí mismo y seguir aprendiendo toda la vida",
+      "Que espere siempre las instrucciones del docente antes de hacer algo",
+      "Que se enfoque únicamente en las materias de su especialidad",
+      "Que compita con sus compañeros para obtener las mejores notas"
+    ],
+    answer: 0,
+    explanation: "El Marco Curricular busca que los jóvenes desarrollen autonomía en su aprendizaje: que sepan buscar información, reflexionar y aprender de forma continua más allá del salón de clases."
+  },
+  {
+    // Correcta: C (2)
+    category: "El docente en el Marco Curricular",
+    text: "¿Cómo debe planear sus clases un docente alineado al Marco Curricular EMS?",
+    options: [
+      "Siguiendo exclusivamente el libro de texto oficial",
+      "Improvisando según cómo se sienta el día de la clase",
+      "Diseñando actividades donde los alumnos apliquen lo que aprenden en situaciones reales",
+      "Dictando apuntes para que los alumnos los estudien en casa"
+    ],
+    answer: 2,
+    explanation: "Planear bien significa crear situaciones de aprendizaje donde el estudiante use sus conocimientos para resolver problemas reales, no solo recibir y memorizar información."
+  },
+  {
+    // Correcta: D (3)
+    category: "Enfoque educativo",
+    text: "¿Qué tipo de aprendizaje promueve el Marco Curricular EMS?",
+    options: [
+      "El aprendizaje memorístico de fechas y fórmulas",
+      "El aprendizaje individual sin colaboración entre compañeros",
+      "El aprendizaje exclusivamente teórico y abstracto",
+      "Un aprendizaje significativo, donde el alumno conecta lo nuevo con su propia vida"
+    ],
+    answer: 3,
+    explanation: "El Marco Curricular promueve que los aprendizajes sean significativos: que el estudiante pueda conectar lo que aprende con su experiencia, su contexto y sus necesidades reales."
+  },
+  {
+    // Correcta: B (1)
+    category: "¿Qué es el Marco Curricular?",
+    text: "¿El Marco Curricular también tiene algo que ver con los docentes?",
+    options: [
+      "No, solo regula los aprendizajes de los estudiantes",
+      "Sí, también define el perfil y las capacidades que deben tener los maestros de EMS",
+      "Solo aplica a directivos y coordinadores académicos",
+      "Únicamente regula los procesos de contratación docente"
+    ],
+    answer: 1,
+    explanation: "El Marco Curricular contempla también un perfil docente: define las capacidades y actitudes que deben tener los maestros de EMS para acompañar bien el aprendizaje de sus estudiantes."
+  },
+  {
+    // Correcta: A (0)
+    category: "Perfil del estudiante",
+    text: "¿Cuál de estas actitudes forma parte del perfil del egresado de la EMS?",
+    options: [
+      "Ser responsable con su entorno, su comunidad y consigo mismo",
+      "Especializarse en una sola materia desde el primer semestre",
+      "Competir individualmente para destacar sobre sus compañeros",
+      "Evitar temas que generen debate o controversia"
+    ],
+    answer: 0,
+    explanation: "La formación en EMS es integral: incluye valores y actitudes ciudadanas como la responsabilidad, el respeto y el compromiso con la comunidad, no solo el dominio académico."
+  },
+  {
+    // Correcta: C (2)
+    category: "El docente en el Marco Curricular",
+    text: "¿Cómo debe ser la relación entre el docente y el estudiante en el aula del Marco Curricular?",
+    options: [
+      "El docente habla y el estudiante escucha sin interrumpir",
+      "El estudiante trabaja solo y el docente solo corrige al final",
+      "Una relación de diálogo donde ambos participan activamente en el aprendizaje",
+      "El docente evalúa y el estudiante memoriza para el examen"
+    ],
+    answer: 2,
+    explanation: "El Marco Curricular propone una relación horizontal y de diálogo: el docente guía y acompaña, y el estudiante participa activamente en la construcción de su propio aprendizaje."
+  },
+  {
+    // Correcta: D (3)
+    category: "Enfoque educativo",
+    text: "¿Por qué el Marco Curricular EMS considera importante el contexto del estudiante?",
+    options: [
+      "Para clasificar a los estudiantes según su nivel socioeconómico",
+      "Para saber si el alumno puede pagar materiales o no",
+      "Para decidir qué tan exigente debe ser el docente con ese grupo",
+      "Porque aprender es más efectivo cuando los contenidos conectan con la realidad del joven"
+    ],
+    answer: 3,
+    explanation: "El aprendizaje es más significativo cuando parte de la realidad del estudiante. El Marco Curricular reconoce que el contexto social, cultural y personal del joven es clave para que el aprendizaje tenga sentido."
+  }
+];
+
+let currentIdx = 0, score = 0, answered = false;
+let shuffled = [], userAnswers = [];
+const letters = ['A','B','C','D'];
+
+function shuffle(arr) {
+  const a = [...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+
+function show(id) {
+  ['screen-start','screen-quiz','screen-result'].forEach(s=>{document.getElementById(s).style.display='none';});
+  const el=document.getElementById(id);
+  el.style.display='block';
+  el.style.animation='fadeIn 0.5s ease';
+}
+
+function showStart(){ show('screen-start'); }
+
+function startQuiz(){
+  shuffled = shuffle(questions);
+  currentIdx=0; score=0; userAnswers=[]; answered=false;
+  show('screen-quiz');
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const q = shuffled[currentIdx];
+  answered = false;
+  document.getElementById('progress-text').textContent = `Pregunta ${currentIdx+1} de ${shuffled.length}`;
+  document.getElementById('score-text').textContent = `Aciertos: ${score}`;
+  document.getElementById('progress-bar').style.width = `${(currentIdx/shuffled.length)*100}%`;
+  document.getElementById('q-category').textContent = q.category;
+  document.getElementById('q-text').textContent = q.text;
+
+  const grid = document.getElementById('options-grid');
+  grid.innerHTML = '';
+  q.options.forEach((opt,i)=>{
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = `<span class="option-letter">${letters[i]}</span>${opt}`;
+    btn.onclick = () => selectAnswer(i);
+    grid.appendChild(btn);
+  });
+
+  document.getElementById('feedback-box').className = 'feedback-box';
+  const btnNext = document.getElementById('btn-next');
+  btnNext.className = '';
+  btnNext.textContent = currentIdx < shuffled.length-1 ? 'Siguiente →' : 'Ver resultados →';
+}
+
+function selectAnswer(idx){
+  if(answered) return;
+  answered = true;
+  const q = shuffled[currentIdx];
+  const btns = document.querySelectorAll('.option-btn');
+  const isCorrect = idx === q.answer;
+  if(isCorrect) score++;
+  userAnswers.push({q, selected:idx, correct:isCorrect});
+
+  btns.forEach((btn,i)=>{
+    btn.disabled = true;
+    if(i === q.answer) btn.classList.add('correct');
+    else if(i === idx && !isCorrect) btn.classList.add('wrong');
+  });
+
+  const fb = document.getElementById('feedback-box');
+  document.getElementById('feedback-title').textContent = isCorrect ? '✓ ¡Correcto!' : `✗ No exactamente. La correcta era: ${letters[q.answer]}`;
+  document.getElementById('feedback-text').textContent = q.explanation;
+  fb.className = `feedback-box ${isCorrect?'correct-fb':'wrong-fb'} show`;
+  document.getElementById('score-text').textContent = `Aciertos: ${score}`;
+  document.getElementById('btn-next').className = 'show';
+}
+
+function nextQuestion(){
+  currentIdx++;
+  if(currentIdx >= shuffled.length) showResult();
+  else renderQuestion();
+}
+
+function showResult(){
+  show('screen-result');
+  const pct = Math.round((score/shuffled.length)*100);
+  document.getElementById('result-score').textContent = `${score}/${shuffled.length}`;
+  let icon, label;
+  if(pct>=80){ icon='🏆'; label=`¡Excelente! Tienes muy claro el Marco Curricular EMS. Obtuviste un ${pct}%.`; }
+  else if(pct>=60){ icon='👍'; label=`¡Buen desempeño! Lograste un ${pct}%. Hay algunos temas que vale la pena repasar.`; }
+  else{ icon='📚'; label=`Obtuviste un ${pct}%. Te recomendamos revisar los conceptos generales del Marco Curricular.`; }
+  document.getElementById('result-icon').textContent = icon;
+  document.getElementById('result-label').textContent = label;
+
+  const list = document.getElementById('breakdown-list');
+  list.innerHTML = '';
+  userAnswers.forEach((ua,i)=>{
+    const div = document.createElement('div');
+    div.className = 'breakdown-item';
+    div.innerHTML = `<span class="breakdown-dot ${ua.correct?'dot-correct':'dot-wrong'}"></span><span class="breakdown-q">P${i+1}. ${ua.q.text.substring(0,65)}...</span><span class="breakdown-mark ${ua.correct?'mark-c':'mark-w'}">${ua.correct?'✓':'✗'}</span>`;
+    list.appendChild(div);
+  });
+  document.getElementById('progress-bar').style.width = '100%';
+}
+</script>
+</body>
+</html>
